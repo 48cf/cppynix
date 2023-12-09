@@ -1,0 +1,76 @@
+#include <flanterm_backends/fb.h>
+#include <limine.h>
+
+#include <arch/asm.hpp>
+#include <arch/debug.hpp>
+#include <lib/debug.hpp>
+
+namespace kernel {
+
+namespace {
+
+__attribute__((used, section(".limine_requests")))
+volatile limine_framebuffer_request framebuffer_request = {
+    .id = LIMINE_FRAMEBUFFER_REQUEST_ID,
+    .revision = 0,
+    .response = nullptr
+};
+
+flanterm_context *flanterm_ctx = nullptr;
+
+} // namespace
+
+void DebugSink::append(char ch) const {
+    arch::debug_print(ch);
+
+    if (flanterm_ctx) {
+        flanterm_write(flanterm_ctx, &ch, 1);
+    }
+}
+
+void DebugSink::append(const char *str) const {
+    frg::string_view str_view{str};
+
+    arch::debug_print(str_view);
+
+    if (flanterm_ctx) {
+        flanterm_write(flanterm_ctx, str, str_view.size());
+    }
+}
+
+DebugSink &debug_sink() {
+    static DebugSink sink;
+    return sink;
+}
+
+void initialize_debug() {
+    limine_framebuffer_response *response = framebuffer_request.response;
+
+    // Ensure we got a framebuffer.
+    if (response == nullptr || response->framebuffer_count < 1) {
+        return;
+    }
+
+    // Fetch the first framebuffer.
+    limine_framebuffer *framebuffer = response->framebuffers[0];
+
+    flanterm_ctx = flanterm_fb_init(
+        nullptr, nullptr, static_cast<uint32_t *>(framebuffer->address),
+        framebuffer->width, framebuffer->height, framebuffer->pitch,
+        framebuffer->red_mask_size, framebuffer->red_mask_shift,
+        framebuffer->green_mask_size, framebuffer->green_mask_shift,
+        framebuffer->blue_mask_size, framebuffer->blue_mask_shift,
+        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+        nullptr, 0, 0, 0, 0, 0, 0);
+}
+
+[[noreturn]] void panic(frg::string_view msg) {
+    print("KERNEL PANIC: {}\n", msg);
+
+    for (;;) {
+        arch::disable_interrupts();
+        arch::wait_for_interrupt();
+    }
+}
+
+} // namespace kernel
