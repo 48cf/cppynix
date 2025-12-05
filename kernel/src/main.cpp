@@ -13,7 +13,7 @@ namespace kernel {
 
 namespace {
 
-__attribute__((used, section(".limine_requests")))
+[[gnu::used, gnu::section(".limine_requests")]]
 volatile std::uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(4);
 
 }
@@ -23,10 +23,10 @@ volatile std::uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(4);
 
 namespace {
 
-__attribute__((used, section(".limine_requests_start")))
+[[gnu::used, gnu::section(".limine_requests_start")]]
 volatile std::uint64_t limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
 
-__attribute__((used, section(".limine_requests_end")))
+[[gnu::used, gnu::section(".limine_requests_end")]]
 volatile std::uint64_t limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
 
 }
