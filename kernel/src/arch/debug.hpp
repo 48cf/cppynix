@@ -2,9 +2,9 @@
 
 #include <frg/string.hpp>
 
-namespace kernel::arch {
+namespace kernel::arch::debug {
 
-void debug_print(char ch);
-void debug_print(frg::string_view str);
+void print(char ch);
+void print(frg::string_view str);
 
-} // namespace kernel::arch
+} // namespace kernel::arch::debug

@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace kernel::arch {
+namespace kernel::arch::snippets {
 
 inline void wait_for_interrupt() {
     asm volatile("hlt");
@@ -22,4 +22,4 @@ inline void disable_interrupts() {
     asm volatile("cli");
 }
 
-} // namespace kernel::arch
+} // namespace kernel::arch::snippets

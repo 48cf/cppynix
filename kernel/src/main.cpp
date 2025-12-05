@@ -2,7 +2,6 @@
 #include <cstddef>
 #include <limine.h>
 
-#include <arch/asm.hpp>
 #include <lib/debug.hpp>
 
 namespace kernel {
@@ -92,18 +91,6 @@ int memcmp(const void *s1, const void *s2, std::size_t n) {
 
 }
 
-// Halt and catch fire function.
-namespace {
-
-void hcf() {
-    for (;;) {
-        arch::disable_interrupts();
-        arch::wait_for_interrupt();
-    }
-}
-
-}
-
 // The following stubs are required by the Itanium C++ ABI (the one we use,
 // regardless of the "Itanium" nomenclature).
 // Like the memory functions above, these stubs can be moved to a different .cpp file,
@@ -115,7 +102,7 @@ int __cxa_atexit(void (*)(void *), void *, void *) {
 }
 
 void __cxa_pure_virtual() {
-    hcf();
+    lib::debug::panic("__cxa_pure_virtual() called");
 }
 
 void *__dso_handle;
@@ -132,7 +119,7 @@ extern void (*__init_array_end[])();
 extern "C" void kmain() {
     // Ensure the bootloader actually understands our base revision (see spec).
     if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
-        hcf();
+        for (;;) {}
     }
 
     // Call global constructors.
@@ -140,11 +127,11 @@ extern "C" void kmain() {
         __init_array[i]();
     }
 
-    initialize_debug();
-    print("Hello, world!\n");
+    lib::debug::init();
+    lib::debug::print("Hello, world!\n");
 
     // We're done, just hang...
-    hcf();
+    lib::debug::panic("Nothing to do");
 }
 
 } // namespace kernel

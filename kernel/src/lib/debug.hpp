@@ -5,26 +5,32 @@
 #define ASSERT(cond) \
     do { \
         if (!(cond)) { \
-            panic("Assertion failed: " #cond); \
+            lib::debug::panic("Assertion failed: " #cond); \
         } \
     } while (false)
 
-namespace kernel {
+namespace kernel::lib::debug {
 
-struct DebugSink {
+struct Sink {
     void append(char ch) const;
     void append(const char *str) const;
+
+    static Sink &get_sink() {
+        static Sink sink;
+        return sink;
+    }
+
+private:
+    Sink() = default;
 };
 
-DebugSink &debug_sink();
-
-void initialize_debug();
+void init();
 
 [[noreturn]] void panic(frg::string_view msg);
 
 template <typename... Args>
 void print(frg::string_view fmt, Args&&... args) {
-    frg::format(frg::fmt(fmt, std::forward<Args>(args)...), debug_sink());
+    frg::format(frg::fmt(fmt, std::forward<Args>(args)...), Sink::get_sink());
 }
 
-} // namespace kernel
+} // namespace kernel::lib::debug

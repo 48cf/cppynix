@@ -1,11 +1,11 @@
 #include <flanterm_backends/fb.h>
 #include <limine.h>
 
-#include <arch/asm.hpp>
+#include <arch/snippets.hpp>
 #include <arch/debug.hpp>
 #include <lib/debug.hpp>
 
-namespace kernel {
+namespace kernel::lib::debug {
 
 namespace {
 
@@ -20,30 +20,25 @@ flanterm_context *flanterm_ctx = nullptr;
 
 } // namespace
 
-void DebugSink::append(char ch) const {
-    arch::debug_print(ch);
+void Sink::append(char ch) const {
+    arch::debug::print(ch);
 
     if (flanterm_ctx) {
         flanterm_write(flanterm_ctx, &ch, 1);
     }
 }
 
-void DebugSink::append(const char *str) const {
+void Sink::append(const char *str) const {
     frg::string_view str_view{str};
 
-    arch::debug_print(str_view);
+    arch::debug::print(str_view);
 
     if (flanterm_ctx) {
         flanterm_write(flanterm_ctx, str, str_view.size());
     }
 }
 
-DebugSink &debug_sink() {
-    static DebugSink sink;
-    return sink;
-}
-
-void initialize_debug() {
+void init() {
     limine_framebuffer_response *response = framebuffer_request.response;
 
     // Ensure we got a framebuffer.
@@ -68,9 +63,9 @@ void initialize_debug() {
     print("KERNEL PANIC: {}\n", msg);
 
     for (;;) {
-        arch::disable_interrupts();
-        arch::wait_for_interrupt();
+        arch::snippets::disable_interrupts();
+        arch::snippets::wait_for_interrupt();
     }
 }
 
-} // namespace kernel
+} // namespace kernel::lib::debug
