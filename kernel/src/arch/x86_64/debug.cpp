@@ -4,12 +4,12 @@
 namespace kernel::arch::debug {
 
 void print(char ch) {
-    outb(0xe9, ch);
+    port::outb(0xe9, ch);
 }
 
 void print(frg::string_view str) {
     for (size_t i = 0; i < str.size(); i++) {
-        outb(0xe9, str[i]);
+        port::outb(0xe9, str[i]);
     }
 }
 

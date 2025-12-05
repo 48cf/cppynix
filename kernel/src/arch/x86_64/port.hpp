@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace kernel::arch {
+namespace kernel::arch::port {
 
 inline void outb(uint16_t port, uint8_t value) {
     asm volatile("outb %0, %1" : : "a"(value), "Nd"(port) : "memory");
@@ -34,4 +34,4 @@ inline uint32_t inl(uint16_t port) {
     return ret;
 }
 
-} // namespace kernel::arch
+} // namespace kernel::arch::port
