@@ -9,7 +9,7 @@ inline void wait_for_interrupt() {
 }
 
 inline bool interrupts_enabled() {
-    uint64_t rflags;
+    std::uint64_t rflags;
     asm volatile("pushfq; popq %0" : "=r"(rflags));
     return rflags & (1 << 9);
 }

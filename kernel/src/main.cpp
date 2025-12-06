@@ -2,33 +2,11 @@
 #include <cstddef>
 #include <limine.h>
 
+#include <boot/limine.hpp>
 #include <lib/debug.hpp>
+#include <mm/pmm.hpp>
 
 namespace kernel {
-
-// Set the base revision to 4, this is recommended as this is the latest
-// base revision described by the Limine boot protocol specification.
-// See specification for further info.
-
-namespace {
-
-[[gnu::used, gnu::section(".limine_requests")]]
-volatile std::uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(4);
-
-}
-
-// Finally, define the start and end markers for the Limine requests.
-// These can also be moved anywhere, to any .cpp file, as seen fit.
-
-namespace {
-
-[[gnu::used, gnu::section(".limine_requests_start")]]
-volatile std::uint64_t limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
-
-[[gnu::used, gnu::section(".limine_requests_end")]]
-volatile std::uint64_t limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
-
-}
 
 // GCC and Clang reserve the right to generate calls to the following
 // 4 functions even if they are not directly called.
@@ -118,7 +96,7 @@ extern void (*__init_array_end[])();
 // linker script accordingly.
 extern "C" void kmain() {
     // Ensure the bootloader actually understands our base revision (see spec).
-    if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
+    if (LIMINE_BASE_REVISION_SUPPORTED(boot::limine::base_revision) == false) {
         for (;;) {}
     }
 
@@ -129,6 +107,31 @@ extern "C" void kmain() {
 
     lib::debug::init();
     lib::debug::print("Hello, world!\n");
+
+    mm::pmm::init();
+
+    {
+        auto pages1 = mm::pmm::allocate_pages(69);
+        auto pages2 = mm::pmm::allocate_pages(420);
+        auto pages3 = mm::pmm::allocate_pages(1337);
+
+        lib::debug::print("Allocated pages at physical addresses: 0x{}, 0x{}, 0x{}\n",
+            frg::hex_fmt{pages1 ? pages1->get() : 0},
+            frg::hex_fmt{pages2 ? pages2->get() : 0},
+            frg::hex_fmt{pages3 ? pages3->get() : 0});
+
+        if (pages3) {
+            mm::pmm::free_pages(*pages3, 1337);
+        }
+
+        if (pages2) {
+            mm::pmm::free_pages(*pages2, 420);
+        }
+
+        if (pages1) {
+            mm::pmm::free_pages(*pages1, 69);
+        }
+    }
 
     // We're done, just hang...
     lib::debug::panic("Nothing to do");

@@ -1,20 +1,13 @@
 #include <flanterm_backends/fb.h>
-#include <limine.h>
 
 #include <arch/snippets.hpp>
 #include <arch/debug.hpp>
+#include <boot/limine.hpp>
 #include <lib/debug.hpp>
 
 namespace kernel::lib::debug {
 
 namespace {
-
-[[gnu::used, gnu::section(".limine_requests")]]
-volatile limine_framebuffer_request framebuffer_request = {
-    .id = LIMINE_FRAMEBUFFER_REQUEST_ID,
-    .revision = 0,
-    .response = nullptr
-};
 
 flanterm_context *flanterm_ctx = nullptr;
 
@@ -39,7 +32,7 @@ void Sink::append(const char *str) const {
 }
 
 void init() {
-    limine_framebuffer_response *response = framebuffer_request.response;
+    limine_framebuffer_response *response = boot::limine::framebuffer_request.response;
 
     // Ensure we got a framebuffer.
     if (response == nullptr || response->framebuffer_count < 1) {
