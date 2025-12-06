@@ -37,10 +37,10 @@ frg::string_view memory_entry_type_to_string(std::uint32_t type) {
 }
 
 struct FreePages {
-    constexpr FreePages(std::size_t pages) : pages{pages} {}
+    explicit FreePages(std::size_t pages) : num_pages{pages} {}
 
     frg::default_list_hook<FreePages> hook;
-    std::size_t pages;
+    std::size_t num_pages;
 
     [[nodiscard]] PhysicalAddr address() const {
         std::uintptr_t addr = reinterpret_cast<std::uintptr_t>(this);
@@ -71,8 +71,7 @@ void init() {
         limine_memmap_entry *entry = memmap_response->entries[i];
 
         lib::debug::print("Memory map entry: base=0x{}, length=0x{}, type={}\n",
-            frg::hex_fmt{entry->base}, frg::hex_fmt{entry->length},
-            memory_entry_type_to_string(entry->type));
+            frg::hex_fmt{entry->base}, frg::hex_fmt{entry->length}, memory_entry_type_to_string(entry->type));
 
         if (entry->type != LIMINE_MEMMAP_USABLE) {
             continue;
@@ -83,36 +82,48 @@ void init() {
         FreePages *pages = new(free_pages) FreePages(entry->length / arch::mm::page_size);
 
         free_pages_list.push_back(pages);
-        total_pages += pages->pages;
+        total_pages += pages->num_pages;
     }
 
-    lib::debug::print("Total physical pages: {} ({} KiB)\n",
-        total_pages, total_pages * arch::mm::page_size / 1024);
+    lib::debug::print("Total physical memory available: {} KiB\n",
+        total_pages * arch::mm::page_size / 1024);
 }
 
 std::optional<PhysicalAddr> allocate_pages(std::size_t num_pages) {
     frg::unique_lock lock{free_pages_lock};
 
-    for (auto it = free_pages_list.begin(); it != free_pages_list.end(); ++it) {
-        FreePages *free_pages = *it;
+    FreePages *free_pages = nullptr;
 
-        if (free_pages->pages < num_pages) {
-            continue;
+    // Fast path for single-page allocations which are the most common.
+    // Any block on the free list will be able to satisfy those.
+    if (num_pages == 1) [[likely]] {
+        free_pages = free_pages_list.front();
+    } else {
+        for (auto it = free_pages_list.begin(); it != free_pages_list.end(); ++it) {
+            FreePages *pages = *it;
+
+            if (pages->num_pages >= num_pages) {
+                free_pages = pages;
+                break;
+            }
         }
-
-        PhysicalAddr addr = free_pages->address();
-
-        if (free_pages->pages == num_pages) {
-            free_pages_list.erase(it);
-        } else {
-            free_pages->pages -= num_pages;
-            addr = PhysicalAddr{addr.get() + free_pages->pages * arch::mm::page_size};
-        }
-
-        return addr;
     }
 
-    return std::nullopt;
+    if (free_pages == nullptr) {
+        return std::nullopt;
+    }
+
+    PhysicalAddr addr = free_pages->address();
+
+    // Adjust the free list entry - if we used all the pages, remove it.
+    if (free_pages->num_pages == num_pages) {
+        free_pages_list.erase(free_pages_list.iterator_to(free_pages));
+    } else {
+        free_pages->num_pages -= num_pages;
+        addr += free_pages->num_pages * arch::mm::page_size;
+    }
+
+    return addr;
 }
 
 void free_pages(PhysicalAddr addr, std::size_t num_pages) {

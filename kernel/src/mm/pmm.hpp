@@ -18,6 +18,50 @@ struct PhysicalAddr {
         return _value == 0;
     }
 
+    [[nodiscard]] constexpr operator std::uintptr_t() const {
+        return _value;
+    }
+
+    [[nodiscard]] constexpr std::strong_ordering operator<=>(PhysicalAddr other) const {
+        return _value <=> other._value;
+    }
+
+    constexpr PhysicalAddr operator+(std::size_t offset) const {
+        return PhysicalAddr{_value + offset};
+    }
+
+    constexpr PhysicalAddr operator+(PhysicalAddr other) const {
+        return PhysicalAddr{_value + other._value};
+    }
+
+    constexpr PhysicalAddr &operator+=(std::size_t offset) {
+        _value += offset;
+        return *this;
+    }
+
+    constexpr PhysicalAddr &operator+=(PhysicalAddr other) {
+        _value += other._value;
+        return *this;
+    }
+
+    constexpr PhysicalAddr operator-(std::size_t offset) const {
+        return PhysicalAddr{_value - offset};
+    }
+
+    constexpr PhysicalAddr operator-(PhysicalAddr other) const {
+        return PhysicalAddr{_value - other._value};
+    }
+
+    constexpr PhysicalAddr &operator-=(std::size_t offset) {
+        _value -= offset;
+        return *this;
+    }
+
+    constexpr PhysicalAddr &operator-=(PhysicalAddr other) {
+        _value -= other._value;
+        return *this;
+    }
+
 private:
     std::uintptr_t _value;
 };
