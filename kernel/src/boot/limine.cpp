@@ -25,10 +25,14 @@ volatile std::uint64_t base_revision[] = LIMINE_BASE_REVISION(4);
 // Finally, define the start and end markers for the Limine requests.
 // These can also be moved anywhere, to any .cpp file, as seen fit.
 
+namespace {
+
 [[gnu::used, gnu::section(".limine_requests_start")]]
-static volatile std::uint64_t limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
+volatile std::uint64_t limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
 
 [[gnu::used, gnu::section(".limine_requests_end")]]
-static volatile std::uint64_t limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
+volatile std::uint64_t limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
+
+}
 
 } // namespace kernel::boot::limine
