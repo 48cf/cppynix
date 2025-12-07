@@ -43,7 +43,7 @@ struct FreePages {
     std::size_t num_pages;
 
     [[nodiscard]] PhysicalAddr address() const {
-        std::uintptr_t addr = reinterpret_cast<std::uintptr_t>(this);
+        auto addr = reinterpret_cast<std::uintptr_t>(this);
         return PhysicalAddr{addr - boot::limine::hhdm_request.response->offset};
     }
 };
@@ -59,8 +59,8 @@ frg::ticket_spinlock free_pages_lock;
 } // namespace
 
 void init() {
-    limine_memmap_response *memmap_response = boot::limine::memmap_request.response;
-    limine_hhdm_response *hhdm_response = boot::limine::hhdm_request.response;
+    auto memmap_response = boot::limine::memmap_request.response;
+    auto hhdm_response = boot::limine::hhdm_request.response;
 
     ASSERT(memmap_response != nullptr);
     ASSERT(hhdm_response != nullptr);
@@ -68,7 +68,7 @@ void init() {
     std::size_t total_pages = 0;
 
     for (std::size_t i = 0; i < memmap_response->entry_count; i++) {
-        limine_memmap_entry *entry = memmap_response->entries[i];
+        auto entry = memmap_response->entries[i];
 
         lib::debug::print("Memory map entry: base=0x{}, length=0x{}, type={}\n",
             frg::hex_fmt{entry->base}, frg::hex_fmt{entry->length}, memory_entry_type_to_string(entry->type));
@@ -77,9 +77,9 @@ void init() {
             continue;
         }
 
-        void *free_pages = reinterpret_cast<void *>(entry->base + hhdm_response->offset);
+        auto free_pages = reinterpret_cast<void *>(entry->base + hhdm_response->offset);
 
-        FreePages *pages = new(free_pages) FreePages(entry->length / arch::mm::page_size);
+        auto pages = new (free_pages) FreePages{entry->length / arch::mm::page_size};
 
         free_pages_list.push_back(pages);
         total_pages += pages->num_pages;
@@ -100,7 +100,7 @@ std::optional<PhysicalAddr> allocate_pages(std::size_t num_pages) {
         free_pages = free_pages_list.front();
     } else {
         for (auto it = free_pages_list.begin(); it != free_pages_list.end(); ++it) {
-            FreePages *pages = *it;
+            auto pages = *it;
 
             if (pages->num_pages >= num_pages) {
                 free_pages = pages;
@@ -113,7 +113,7 @@ std::optional<PhysicalAddr> allocate_pages(std::size_t num_pages) {
         return std::nullopt;
     }
 
-    PhysicalAddr addr = free_pages->address();
+    auto addr = free_pages->address();
 
     // Adjust the free list entry - if we used all the pages, remove it.
     if (free_pages->num_pages == num_pages) {
@@ -129,9 +129,9 @@ std::optional<PhysicalAddr> allocate_pages(std::size_t num_pages) {
 void free_pages(PhysicalAddr addr, std::size_t num_pages) {
     frg::unique_lock lock{free_pages_lock};
 
-    void *free_pages = reinterpret_cast<void *>(addr.get() + boot::limine::hhdm_request.response->offset);
+    auto free_pages = reinterpret_cast<void *>(addr.get() + boot::limine::hhdm_request.response->offset);
 
-    free_pages_list.push_back(new(free_pages) FreePages(num_pages));
+    free_pages_list.push_back(new (free_pages) FreePages{num_pages});
 }
 
 } // namespace kernel::mm::pmm
@@ -159,7 +159,7 @@ std::optional<PhysicalAddr> AllocatedPages::take(std::size_t count) {
         return std::nullopt;
     }
 
-    PhysicalAddr addr = _addr;
+    auto addr = _addr;
 
     _addr = PhysicalAddr{_addr.get() + count * arch::mm::page_size};
     _num_pages -= count;

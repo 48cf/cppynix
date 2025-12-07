@@ -80,7 +80,7 @@ struct AllocatedPages {
     static std::optional<AllocatedPages> allocate(std::size_t num_pages);
 
     AllocatedPages(const AllocatedPages &) = delete;
-    AllocatedPages &operator= (const AllocatedPages &) = delete;
+    AllocatedPages &operator=(const AllocatedPages &) = delete;
 
     AllocatedPages(AllocatedPages &&other) {
         _addr = other._addr;
@@ -90,7 +90,7 @@ struct AllocatedPages {
         other._num_pages = 0;
     }
 
-    AllocatedPages &operator= (AllocatedPages &&other) {
+    AllocatedPages &operator=(AllocatedPages &&other) {
         if (this != &other) {
             _addr = other._addr;
             _num_pages = other._num_pages;
