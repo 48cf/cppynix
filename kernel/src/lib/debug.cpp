@@ -32,7 +32,7 @@ void Sink::append(const char *str) const {
 }
 
 void init() {
-    limine_framebuffer_response *response = boot::limine::framebuffer_request.response;
+    auto response = boot::limine::framebuffer_request.response;
 
     // Ensure we got a framebuffer.
     if (response == nullptr || response->framebuffer_count < 1) {
@@ -40,7 +40,7 @@ void init() {
     }
 
     // Fetch the first framebuffer.
-    limine_framebuffer *framebuffer = response->framebuffers[0];
+    auto framebuffer = response->framebuffers[0];
 
     flanterm_ctx = flanterm_fb_init(
         nullptr, nullptr, static_cast<uint32_t *>(framebuffer->address),
